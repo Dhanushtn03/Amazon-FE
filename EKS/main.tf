@@ -25,13 +25,29 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEKSClusterPolicy" {
 data "aws_vpc" "default" {
   default = true
 }
+
+# Get supported availability zones for EKS in the region (exclude unsupported ones)
+data "aws_availability_zones" "supported" {
+  state = "available"
+
+  filter {
+    name   = "zone-name"
+    values = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1f"] # Supported zones for EKS in us-east-1
+  }
+}
+
 #get public subnets for cluster
 data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+  filter {
+    name   = "availability-zone"
+    values = data.aws_availability_zones.supported.names
+  }
 }
+
 #cluster provision
 resource "aws_eks_cluster" "example" {
   name     = "EKS_CLOUD"
